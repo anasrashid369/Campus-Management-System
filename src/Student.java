@@ -2,7 +2,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 
-public class Student extends Person{
+public abstract class Student extends Person{
     private String studentId;
     private int totalCreditHours;
     private List<Enrollement> enrollements;

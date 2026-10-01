@@ -74,6 +74,8 @@ public final class CampusCli {
 
     private final BufferedReader input;
     private final PrintStream output;
+    private final AcademicOfficeAdmin academicOfficeAdmin = new AcademicOfficeAdmin(
+            "Console Admin", "console-admin@localhost", "", "CLI-ADMIN");
 
     public CampusCli() {
         this(new BufferedReader(new InputStreamReader(System.in)), System.out);
@@ -127,7 +129,107 @@ public final class CampusCli {
                 return;
             }
 
-            output.println("This workflow is not connected yet.");
+            if (roleMenu.role().equals("Academic Office Admin")) {
+                handleAdminAction(selection);
+            } else {
+                output.println("This workflow is not connected yet.");
+            }
+        }
+    }
+
+    private void handleAdminAction(int selection) throws IOException {
+        switch (selection) {
+            case 1 -> createCourse();
+            case 3 -> searchCourse();
+            default -> output.println("This workflow is not connected yet.");
+        }
+    }
+
+    private void createCourse() throws IOException {
+        String courseCode = readRequiredText("Course code: ");
+        if (courseCode == null) {
+            return;
+        }
+
+        String title = readRequiredText("Course title: ");
+        if (title == null) {
+            return;
+        }
+
+        Integer creditHours = readPositiveInteger("Credit hours: ");
+        if (creditHours == null) {
+            return;
+        }
+
+        if (academicOfficeAdmin.searchCourse(courseCode) != null) {
+            output.printf("Course %s already exists; no course was created.%n", courseCode);
+            return;
+        }
+
+        try {
+            Course course = new Course(courseCode, title, creditHours);
+            academicOfficeAdmin.createCourse(course);
+            if (academicOfficeAdmin.searchCourse(courseCode) == course) {
+                output.printf("Course %s created successfully.%n", courseCode);
+            } else {
+                output.printf("Course %s was not created.%n", courseCode);
+            }
+        } catch (IllegalArgumentException exception) {
+            output.printf("Course was not created: %s%n", exception.getMessage());
+        }
+    }
+
+    private void searchCourse() throws IOException {
+        String courseCode = readRequiredText("Course code to search: ");
+        if (courseCode == null) {
+            return;
+        }
+
+        Course course = academicOfficeAdmin.searchCourse(courseCode);
+        if (course == null) {
+            output.printf("No course found with code %s.%n", courseCode);
+            return;
+        }
+
+        output.printf("Course found: %s | %s | %d credit hour(s)%n",
+                course.getCourseCode(), course.getTitle(), course.getCreditHours());
+    }
+
+    private String readRequiredText(String prompt) throws IOException {
+        while (true) {
+            output.print(prompt);
+            output.flush();
+            String line = input.readLine();
+            if (line == null) {
+                return null;
+            }
+
+            String value = line.trim();
+            if (!value.isEmpty()) {
+                return value;
+            }
+            output.println("This value cannot be blank.");
+        }
+    }
+
+    private Integer readPositiveInteger(String prompt) throws IOException {
+        while (true) {
+            output.print(prompt);
+            output.flush();
+            String line = input.readLine();
+            if (line == null) {
+                return null;
+            }
+
+            try {
+                int value = Integer.parseInt(line.trim());
+                if (value > 0) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+                // Invalid numeric input is handled below.
+            }
+            output.println("Enter a positive whole number of credit hours.");
         }
     }
 

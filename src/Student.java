@@ -61,13 +61,15 @@ public abstract class Student extends Person{
         return timetable;
     }
     public Submission submitAssignment(Assignment assignment, String content){
-        // TODO: implement later
-
-        return null;
+        Submission submission = new Submission(
+                "SUB-" + studentId + "-" + assignment.getId(), assignment, this, content);
+        submission.submit();
+        assignment.addSubmission(submission);
+        return submission;
     }
 
     public void submitCourseClashRequest(CourseClashRequest request){
-        // TODO: implement later
+        request.submit();
     }
 
 

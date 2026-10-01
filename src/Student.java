@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public abstract class Student extends Person{
     private String studentId;
     private int totalCreditHours;
-    private List<Enrollement> enrollements;
+    private List<Enrollment> enrollments;
 
 
     // Constructor

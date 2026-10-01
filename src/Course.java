@@ -30,6 +30,11 @@ public class Course {
         return creditHours;
     }
 
+    void updateDetails(String title, int creditHours) {
+        this.title = title;
+        this.creditHours = creditHours;
+    }
+
     public void addPrerequisite(Course course) {
         prerequisites.add(course);
     }

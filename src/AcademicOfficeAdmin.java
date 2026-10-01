@@ -23,9 +23,9 @@ public class AcademicOfficeAdmin extends Administrator {
 
     // Replaces the stored course that has the same course code
     public void updateCourse(Course course) {
-        for (int i = 0; i < courses.size(); i++) {
-            if (courses.get(i).getCourseCode().equalsIgnoreCase(course.getCourseCode())) {
-                courses.set(i, course);
+        for (Course existingCourse : courses) {
+            if (existingCourse.getCourseCode().equalsIgnoreCase(course.getCourseCode())) {
+                existingCourse.updateDetails(course.getTitle(), course.getCreditHours());
                 return;
             }
         }

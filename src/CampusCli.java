@@ -2,7 +2,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.time.DateTimeException;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public final class CampusCli {
     private static final List<RoleMenu> ROLE_MENUS = List.of(
@@ -76,6 +80,8 @@ public final class CampusCli {
     private final PrintStream output;
     private final AcademicOfficeAdmin academicOfficeAdmin = new AcademicOfficeAdmin(
             "Console Admin", "console-admin@localhost", "", "CLI-ADMIN");
+    private final List<Section> managedSections = new ArrayList<>();
+    private final List<Instructor> managedInstructors = new ArrayList<>();
 
     public CampusCli() {
         this(new BufferedReader(new InputStreamReader(System.in)), System.out);
@@ -140,7 +146,16 @@ public final class CampusCli {
     private void handleAdminAction(int selection) throws IOException {
         switch (selection) {
             case 1 -> createCourse();
+            case 2 -> updateCourse();
             case 3 -> searchCourse();
+            case 4 -> createSection();
+            case 5 -> updateSection();
+            case 6 -> setSectionCapacity();
+            case 7 -> assignRoom();
+            case 8 -> assignInstructor();
+            case 9 -> viewRequests();
+            case 10 -> processRequest(RequestStatus.APPROVED);
+            case 11 -> processRequest(RequestStatus.REJECTED);
             default -> output.println("This workflow is not connected yet.");
         }
     }
@@ -156,7 +171,8 @@ public final class CampusCli {
             return;
         }
 
-        Integer creditHours = readPositiveInteger("Credit hours: ");
+        Integer creditHours = readPositiveInteger(
+            "Credit hours: ", "Enter a positive whole number of credit hours.");
         if (creditHours == null) {
             return;
         }
@@ -195,6 +211,38 @@ public final class CampusCli {
                 course.getCourseCode(), course.getTitle(), course.getCreditHours());
     }
 
+    private void updateCourse() throws IOException {
+        String courseCode = readRequiredText("Course code to update: ");
+        if (courseCode == null) {
+            return;
+        }
+        Course existingCourse = academicOfficeAdmin.searchCourse(courseCode);
+        if (existingCourse == null) {
+            output.printf("No course found with code %s.%n", courseCode);
+            return;
+        }
+
+        String title = readRequiredText("New course title: ");
+        if (title == null) {
+            return;
+        }
+        Integer creditHours = readPositiveInteger(
+                "New credit hours: ", "Enter a positive whole number of credit hours.");
+        if (creditHours == null) {
+            return;
+        }
+
+        Course updatedDetails = new Course(existingCourse.getCourseCode(), title, creditHours);
+        academicOfficeAdmin.updateCourse(updatedDetails);
+        if (academicOfficeAdmin.searchCourse(courseCode) == existingCourse
+                && existingCourse.getTitle().equals(title)
+                && existingCourse.getCreditHours() == creditHours) {
+            output.printf("Course %s updated successfully.%n", existingCourse.getCourseCode());
+        } else {
+            output.printf("Course %s was not updated.%n", courseCode);
+        }
+    }
+
     private String readRequiredText(String prompt) throws IOException {
         while (true) {
             output.print(prompt);
@@ -212,7 +260,265 @@ public final class CampusCli {
         }
     }
 
-    private Integer readPositiveInteger(String prompt) throws IOException {
+    private void createSection() throws IOException {
+        String sectionId = readRequiredText("Section ID: ");
+        if (sectionId == null) {
+            return;
+        }
+        for (Section section : managedSections) {
+            if (section.getSectionId().equalsIgnoreCase(sectionId)) {
+                output.printf("Section %s already exists.%n", sectionId);
+                return;
+            }
+        }
+
+        String courseCode = readRequiredText("Course code: ");
+        if (courseCode == null) {
+            return;
+        }
+        Course course = academicOfficeAdmin.searchCourse(courseCode);
+        if (course == null) {
+            output.printf("No course found with code %s.%n", courseCode);
+            return;
+        }
+
+        Integer capacity = readPositiveInteger(
+                "Section capacity: ", "Enter a positive whole number for capacity.");
+        if (capacity == null) {
+            return;
+        }
+
+        Section section = new Section(sectionId, capacity, course);
+        academicOfficeAdmin.createSection(section);
+        if (course.getSections().contains(section)) {
+            managedSections.add(section);
+            output.printf("Section %s created for course %s.%n", sectionId, course.getCourseCode());
+        } else {
+            output.printf("Section %s was not created.%n", sectionId);
+        }
+    }
+
+    private void setSectionCapacity() throws IOException {
+        Section section = findManagedSection();
+        if (section == null) {
+            return;
+        }
+
+        updateSectionCapacity(section);
+    }
+
+    private void updateSectionCapacity(Section section) throws IOException {
+        Integer capacity = readPositiveInteger(
+                "New capacity: ", "Enter a positive whole number for capacity.");
+        if (capacity == null) {
+            return;
+        }
+
+        try {
+            academicOfficeAdmin.setCapacity(section, capacity);
+            output.printf("Capacity for section %s set to %d.%n",
+                    section.getSectionId(), section.getCapacity());
+        } catch (IllegalArgumentException exception) {
+            output.printf("Capacity was not changed: %s%n", exception.getMessage());
+        }
+    }
+
+    private void assignRoom() throws IOException {
+        Section section = findManagedSection();
+        if (section == null) {
+            return;
+        }
+
+        assignRoom(section);
+    }
+
+    private void assignRoom(Section section) throws IOException {
+        String dayInput = readRequiredText("Day (Monday-Saturday): ");
+        if (dayInput == null) {
+            return;
+        }
+        Day day;
+        try {
+            day = Day.valueOf(dayInput.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            output.println("Enter a day from Monday through Saturday.");
+            return;
+        }
+
+        LocalTime startTime = readTime("Start time (HH:mm): ");
+        if (startTime == null) {
+            return;
+        }
+        LocalTime endTime = readTime("End time (HH:mm): ");
+        if (endTime == null) {
+            return;
+        }
+        if (!endTime.isAfter(startTime)) {
+            output.println("End time must be after start time.");
+            return;
+        }
+
+        String room = readRequiredText("Room: ");
+        if (room == null) {
+            return;
+        }
+
+        Schedule schedule = new Schedule(day, startTime, endTime, room);
+        academicOfficeAdmin.assignRoom(section, schedule);
+        output.printf("Room assigned to section %s: %s%n",
+                section.getSectionId(), schedule.getScheduleInfo());
+    }
+
+    private void updateSection() throws IOException {
+        Section section = findManagedSection();
+        if (section == null) {
+            return;
+        }
+
+        output.printf("Update Section %s%n", section.getSectionId());
+        output.println("0. Cancel");
+        output.println("1. Update capacity");
+        output.println("2. Update room and schedule");
+        Integer selection = readChoice("Select a field to update: ", 0, 2);
+        if (selection == null || selection == 0) {
+            return;
+        }
+        if (selection == 1) {
+            updateSectionCapacity(section);
+        } else {
+            assignRoom(section);
+        }
+    }
+
+    private void assignInstructor() throws IOException {
+        Section section = findManagedSection();
+        if (section == null) {
+            return;
+        }
+
+        String teacherId = readRequiredText("Instructor ID: ");
+        if (teacherId == null) {
+            return;
+        }
+
+        Instructor instructor = findManagedInstructor(teacherId);
+        if (instructor == null) {
+            Integer instructorType = readChoice(
+                    "1. Permanent Instructor\n2. Visiting Instructor\nSelect type: ", 1, 2);
+            if (instructorType == null) {
+                return;
+            }
+            String name = readRequiredText("Name: ");
+            if (name == null) {
+                return;
+            }
+            String email = readRequiredText("Email: ");
+            if (email == null) {
+                return;
+            }
+            String phone = readRequiredText("Phone: ");
+            if (phone == null) {
+                return;
+            }
+
+            if (instructorType == 1) {
+                instructor = new PermanentInstructor(name, email, phone, teacherId);
+            } else {
+                instructor = new VisitingInstructor(name, email, phone, teacherId);
+            }
+            managedInstructors.add(instructor);
+        }
+
+        academicOfficeAdmin.assignInstructor(section, instructor);
+        if (section.getInstructor() == instructor) {
+            output.printf("%s assigned to section %s.%n",
+                    instructor.getRole(), section.getSectionId());
+        } else {
+            output.printf("Instructor was not assigned to section %s.%n", section.getSectionId());
+        }
+    }
+
+    private Instructor findManagedInstructor(String teacherId) {
+        for (Instructor instructor : managedInstructors) {
+            if (instructor.getTeacherId().equalsIgnoreCase(teacherId)) {
+                return instructor;
+            }
+        }
+        return null;
+    }
+
+    private void viewRequests() {
+        List<Request> requests = academicOfficeAdmin.viewRequests();
+        if (requests.isEmpty()) {
+            output.println("No requests are currently available.");
+            return;
+        }
+        for (int index = 0; index < requests.size(); index++) {
+            output.printf("%d. %s%n", index + 1, requests.get(index).getDetails());
+        }
+    }
+
+    private void processRequest(RequestStatus status) throws IOException {
+        List<Request> requests = academicOfficeAdmin.viewRequests();
+        if (requests.isEmpty()) {
+            output.println("No requests are currently available to process.");
+            return;
+        }
+        for (int index = 0; index < requests.size(); index++) {
+            output.printf("%d. %s%n", index + 1, requests.get(index).getDetails());
+        }
+
+        Integer selection = readChoice("Select a request (0 to cancel): ", 0, requests.size());
+        if (selection == null || selection == 0) {
+            return;
+        }
+        Request request = requests.get(selection - 1);
+        if (request.getStatus() != RequestStatus.PENDING) {
+            output.printf("Request %s has already been processed as %s.%n",
+                    request.getRequestId(), request.getStatus());
+            return;
+        }
+
+        if (status == RequestStatus.APPROVED) {
+            academicOfficeAdmin.approveRequest(request);
+        } else {
+            academicOfficeAdmin.rejectRequest(request);
+        }
+        if (request.getStatus() == status) {
+            output.printf("Request %s %s.%n", request.getRequestId(), status.name().toLowerCase(Locale.ROOT));
+        } else {
+            output.printf("Request %s was not processed.%n", request.getRequestId());
+        }
+    }
+
+    private Section findManagedSection() throws IOException {
+        String sectionId = readRequiredText("Section ID: ");
+        if (sectionId == null) {
+            return null;
+        }
+        for (Section section : managedSections) {
+            if (section.getSectionId().equalsIgnoreCase(sectionId)) {
+                return section;
+            }
+        }
+        output.printf("No section found with ID %s in this CLI session.%n", sectionId);
+        return null;
+    }
+
+    private LocalTime readTime(String prompt) throws IOException {
+        String value = readRequiredText(prompt);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value);
+        } catch (DateTimeException exception) {
+            output.println("Enter time in 24-hour HH:mm format.");
+            return null;
+        }
+    }
+
+    private Integer readPositiveInteger(String prompt, String errorMessage) throws IOException {
         while (true) {
             output.print(prompt);
             output.flush();
@@ -229,7 +535,7 @@ public final class CampusCli {
             } catch (NumberFormatException ignored) {
                 // Invalid numeric input is handled below.
             }
-            output.println("Enter a positive whole number of credit hours.");
+            output.println(errorMessage);
         }
     }
 

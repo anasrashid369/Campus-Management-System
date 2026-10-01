@@ -13,7 +13,7 @@ public abstract class Student extends Person{
         super(name,email,phone);
         this.studentId = studentId;
         this.totalCreditHours = totalCreditHours;
-
+        this.enrollments = new ArrayList<>();
     }
 
     //Methods
@@ -33,12 +33,25 @@ public abstract class Student extends Person{
 
 
     public void register(Section section){
-        // TODO: implement later
+        if (section == null || isEnrolledIn(section) || section.isFull()) {
+            return;
+        }
+        for (Enrollment e : enrollments) {
+            if (e.getSection().hasClash(section)) {
+                return; // timetable clash
+            }
+        }
+        section.enroll(this);
+        totalCreditHours += section.getCourse().getCreditHours();
     }
 
 
     public void drop(Section section){
-        // TODO: implement later
+        if (section == null || !isEnrolledIn(section)) {
+            return;
+        }
+        section.drop(this);
+        totalCreditHours -= section.getCourse().getCreditHours();
     }
 
     public int calculateTotalCreditHours(){
@@ -56,7 +69,10 @@ public abstract class Student extends Person{
     public List<Schedule> viewTimetable(){
         List<Schedule> timetable = new ArrayList<>();
         for (Enrollment e : enrollments) {
-            timetable.add(e.getSection().getSchedule());
+            Schedule schedule = e.getSection().getSchedule();
+            if (schedule != null) {
+                timetable.add(schedule);
+            }
         }
         return timetable;
     }
@@ -72,8 +88,21 @@ public abstract class Student extends Person{
         request.submit();
     }
 
+    // Added: called by Section.enroll / Section.drop to keep both sides in sync
+    void addEnrollment(Enrollment enrollment){
+        enrollments.add(enrollment);
+    }
 
+    void removeEnrollment(Enrollment enrollment){
+        enrollments.remove(enrollment);
+    }
 
-
-
+    private boolean isEnrolledIn(Section section){
+        for (Enrollment e : enrollments) {
+            if (e.getSection() == section) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

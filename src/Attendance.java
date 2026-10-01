@@ -20,4 +20,17 @@ public class Attendance {
     public void setStatus(AttendanceStatus status) {
         this.status = status;
     }
+
+    // Added getters: needed to calculate attendance percentage
+    public Student getStudent() {
+        return student;
+    }
+
+    public Section getSection() {
+        return section;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
 }

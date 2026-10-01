@@ -39,6 +39,7 @@ public abstract class Instructor extends Person{
 
     public void markAttendance(Attendance attendance,AttendanceStatus status){
         attendance.setStatus(status);
+        attendance.getSection().addAttendance(attendance); // record it in the section (ignored if already there)
     }
 
     public void updateAttendance(Attendance attendance,AttendanceStatus status){
@@ -46,12 +47,27 @@ public abstract class Instructor extends Person{
     }
 
     public double calculateAttendancePercentage(Student student,Section section){
-        // TODO: implement later
-        return 0.0;
+        int total = 0;
+        int attended = 0;
+        for (Attendance a : section.getAttendanceRecords()) {
+            if (a.getStudent().equals(student)) {
+                total++;
+                if (a.getStatus() != AttendanceStatus.ABSENT) { // PRESENT and LATE both count as attended
+                    attended++;
+                }
+            }
+        }
+        return total == 0 ? 0.0 : (attended * 100.0) / total;
     }
 
-    // Added: so sections can be assigned to an instructor
+    // Added: so sections can be assigned to an instructor (called by Section.assignInstructor)
     public void addSection(Section section){
-        assignedSections.add(section);
+        if (!assignedSections.contains(section)) {
+            assignedSections.add(section);
+        }
+    }
+
+    public void removeSection(Section section){
+        assignedSections.remove(section);
     }
 }

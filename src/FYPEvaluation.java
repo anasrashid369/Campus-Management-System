@@ -15,9 +15,9 @@ public class FYPEvaluation {
         this.feedback = "";
     }
 
-    public void evaluate(double score) {
-        if (score < 0) {
-            throw new IllegalArgumentException("Score cannot be negative");
+    public void evaluate(double score) throws InvalidFYPEvaluationException {
+        if (!Double.isFinite(score) || score < 0) {
+            throw new InvalidFYPEvaluationException("Score must be a non-negative finite number");
         }
         this.score = score;
     }

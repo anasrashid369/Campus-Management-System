@@ -23,6 +23,14 @@ public class Assignment extends Assessment {
         return submissions;
     }
 
+    public Section getSection() {
+        return section;
+    }
+
+    public TeachingAssistant getCreatedBy() {
+        return createdBy;
+    }
+
     public boolean isDeadlinePassed() {
         return LocalDate.now().isAfter(getDeadline());
     }

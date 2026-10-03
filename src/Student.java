@@ -32,13 +32,24 @@ public abstract class Student extends Person{
     }
 
 
-    public void register(Section section){
-        if (section == null || isEnrolledIn(section) || section.isFull()) {
-            return;
+    public void register(Section section) throws CourseFullException, CourseClashException {
+        if (section == null) {
+            throw new IllegalArgumentException("Section cannot be null");
+        }
+        if (isEnrolledIn(section)) {
+            throw new IllegalArgumentException("Student is already enrolled in section "
+                    + section.getSectionId());
+        }
+        for (Course prerequisite : section.getCourse().getPrerequisites()) {
+            if (!viewCourses().contains(prerequisite)) {
+                throw new IllegalArgumentException("Register for prerequisite "
+                        + prerequisite.getCourseCode() + " first");
+            }
         }
         for (Enrollment e : enrollments) {
             if (e.getSection().hasClash(section)) {
-                return; // timetable clash
+                throw new CourseClashException("Section " + section.getSectionId()
+                        + " clashes with registered section " + e.getSection().getSectionId());
             }
         }
         section.enroll(this);

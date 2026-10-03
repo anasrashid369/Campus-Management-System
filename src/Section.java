@@ -20,9 +20,15 @@ public class Section {
         this.attendanceRecords = new ArrayList<>();
     }
 
-    public void enroll(Student student) {
-        if (isFull() || getEnrolledStudents().contains(student)) {
-            return;
+    public void enroll(Student student) throws CourseFullException {
+        if (student == null) {
+            throw new IllegalArgumentException("Student cannot be null");
+        }
+        if (isFull()) {
+            throw new CourseFullException("Section " + sectionId + " is full");
+        }
+        if (getEnrolledStudents().contains(student)) {
+            throw new IllegalArgumentException("Student is already enrolled in section " + sectionId);
         }
         String id = sectionId + "-" + student.getStudentId();
         Enrollment enrollment = new Enrollment(id, student, this, LocalDate.now());

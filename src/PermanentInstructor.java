@@ -26,16 +26,32 @@ public class PermanentInstructor extends Instructor implements Evaluator {
         return group.getDetails();
     }
 
-    public void scheduleFYPMeeting(FYPGroup group, FYPMeeting meeting) {
+    public void scheduleFYPMeeting(FYPGroup group, FYPMeeting meeting) throws InvalidFYPGroupException {
+        requireSupervisedGroup(group);
         group.addMeeting(meeting);
     }
 
-    public void evaluateFYPIdea(FYPGroup group, FYPEvaluation evaluation) {
+    public void evaluateFYPIdea(FYPGroup group, FYPEvaluation evaluation)
+            throws InvalidFYPGroupException, InvalidFYPEvaluationException {
+        requireSupervisedGroup(group);
         group.addEvaluation(evaluation);
     }
 
-    public void provideFYPFeedback(FYPEvaluation evaluation, String feedback) {
+    public void provideFYPFeedback(FYPEvaluation evaluation, String feedback)
+            throws InvalidFYPGroupException, InvalidFYPEvaluationException {
+        if (evaluation == null || evaluation.getEvaluator() != this) {
+            throw new InvalidFYPEvaluationException("Evaluation was not created by this instructor");
+        }
+        if (feedback == null || feedback.isBlank()) {
+            throw new InvalidFYPEvaluationException("Feedback cannot be blank");
+        }
         evaluation.addFeedback(feedback);
+    }
+
+    private void requireSupervisedGroup(FYPGroup group) throws InvalidFYPGroupException {
+        if (group == null || group.getSupervisor() != this || !fypGroups.contains(group)) {
+            throw new InvalidFYPGroupException("FYP group is not supervised by this instructor");
+        }
     }
 
     // Added: called by FYPGroup.assignSupervisor to keep both sides in sync

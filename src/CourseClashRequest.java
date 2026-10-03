@@ -16,6 +16,14 @@ public class CourseClashRequest extends Request {
                 + " | Requested: " + requestedSection.getCourse().getCourseCode();
     }
 
+    public Section getConflictingSection() {
+        return conflictingSection;
+    }
+
+    public Section getRequestedSection() {
+        return requestedSection;
+    }
+
     @Override
     public String getDetails() {
         return super.getDetails() + " | " + getConflictDetails();

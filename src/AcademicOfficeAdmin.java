@@ -41,6 +41,14 @@ public class AcademicOfficeAdmin extends Administrator {
         return null;
     }
 
+    public List<Course> viewCourses() {
+        return new ArrayList<>(courses);
+    }
+
+    public List<Section> viewSections() {
+        return new ArrayList<>(sections);
+    }
+
     // ---- Sections ----
     public void createSection(Section section) {
         if (section == null || sections.contains(section)) {
@@ -79,27 +87,36 @@ public class AcademicOfficeAdmin extends Administrator {
 
     // ---- Requests ----
     // Added: students don't know the admin, so requests are handed to the office here
-    public void addRequest(Request request) {
-        if (request != null && !requests.contains(request)) {
-            requests.add(request);
+    public void addRequest(Request request) throws InvalidRequestException {
+        if (request == null) {
+            throw new InvalidRequestException("Request cannot be null");
         }
+        for (Request existing : requests) {
+            if (existing.getRequestId().equalsIgnoreCase(request.getRequestId())) {
+                throw new InvalidRequestException("Request ID already exists: " + request.getRequestId());
+            }
+        }
+        requests.add(request);
     }
 
     public List<Request> viewRequests() {
         return new ArrayList<>(requests);
     }
 
-    public void approveRequest(Request request) {
+    public void approveRequest(Request request) throws InvalidRequestException {
         process(request, RequestStatus.APPROVED);
     }
 
-    public void rejectRequest(Request request) {
+    public void rejectRequest(Request request) throws InvalidRequestException {
         process(request, RequestStatus.REJECTED);
     }
 
-    private void process(Request request, RequestStatus newStatus) {
+    private void process(Request request, RequestStatus newStatus) throws InvalidRequestException {
+        if (request == null || !requests.contains(request)) {
+            throw new InvalidRequestException("Request is not in this admin's queue");
+        }
         if (request.getStatus() != RequestStatus.PENDING) {
-            return; // already processed
+            throw new InvalidRequestException("Request " + request.getRequestId() + " is not pending");
         }
         request.setStatus(newStatus);
         request.setProcessedBy(this);

@@ -39,6 +39,10 @@ public class Course {
         prerequisites.add(course);
     }
 
+    public Set<Course> getPrerequisites() {
+        return Set.copyOf(prerequisites);
+    }
+
     public void addSection(Section section) {
         sections.add(section);
     }

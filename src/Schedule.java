@@ -21,6 +21,22 @@ public class Schedule {
                 && schedule.startTime.isBefore(this.endTime);
     }
 
+    public Day getDay() {
+        return day;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public String getRoom() {
+        return room;
+    }
+
     public String getScheduleInfo() {
         return day + " " + startTime + "-" + endTime + " (" + room + ")";
     }

@@ -21,6 +21,14 @@ public class FYPMeeting {
         return meetingDate;
     }
 
+    public String getAgenda() {
+        return agenda;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
     public String getMeetingDetails() {
         return "Meeting " + meetingId + " on " + meetingDate
                 + "\nAgenda: " + agenda

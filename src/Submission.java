@@ -33,6 +33,9 @@ public class Submission {
     }
 
     public void assignMarks(double marks) {
+        if (!Double.isFinite(marks) || marks < 0 || marks > assignment.getTotalMarks()) {
+            throw new IllegalArgumentException("Marks must be between zero and the assignment total");
+        }
         this.marks = marks;
         this.status = SubmissionStatus.EVALUATED;
     }
@@ -47,5 +50,38 @@ public class Submission {
 
     public SubmissionStatus getStatus() {
         return status;
+    }
+
+    public String getSubmissionId() {
+        return submissionId;
+    }
+
+    public Assignment getAssignment() {
+        return assignment;
+    }
+
+    public Student getStudent() {
+        return student;
+    }
+
+    public LocalDate getSubmissionDate() {
+        return submissionDate;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public Feedback getFeedback() {
+        return feedback;
+    }
+
+    void restoreState(LocalDate submissionDate, String content, double marks,
+                      SubmissionStatus status, Feedback feedback) {
+        this.submissionDate = submissionDate;
+        this.content = content;
+        this.marks = marks;
+        this.status = status;
+        this.feedback = feedback;
     }
 }

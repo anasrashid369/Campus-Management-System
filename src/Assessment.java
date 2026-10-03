@@ -34,4 +34,18 @@ public abstract class Assessment {
     public double getTotalMarks() {
         return totalMarks;
     }
+
+    public void setDeadline(LocalDate deadline) {
+        if (deadline == null) {
+            throw new IllegalArgumentException("Deadline cannot be null");
+        }
+        this.deadline = deadline;
+    }
+
+    public void setTotalMarks(double totalMarks) {
+        if (!Double.isFinite(totalMarks) || totalMarks <= 0) {
+            throw new IllegalArgumentException("Total marks must be a positive finite number");
+        }
+        this.totalMarks = totalMarks;
+    }
 }

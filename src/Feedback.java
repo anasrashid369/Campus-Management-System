@@ -16,4 +16,16 @@ public class Feedback {
     public String getComments() {
         return comments;
     }
+
+    public String getFeedbackId() {
+        return feedbackId;
+    }
+
+    public Evaluator getEvaluator() {
+        return evaluator;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
 }

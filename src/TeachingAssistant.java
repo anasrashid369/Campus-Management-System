@@ -31,6 +31,16 @@ public class TeachingAssistant extends Student implements Evaluator {
         return assignment.getSubmissions();
     }
 
+    public List<Assignment> getCreatedAssignments() {
+        return new ArrayList<>(createdAssignments);
+    }
+
+    void restoreAssignment(Assignment assignment) {
+        if (assignment != null && !createdAssignments.contains(assignment)) {
+            createdAssignments.add(assignment);
+        }
+    }
+
     public void evaluateSubmission(Submission submission, double marks) {
         submission.assignMarks(marks);
     }

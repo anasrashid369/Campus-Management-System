@@ -19,10 +19,14 @@ public class FYPGroup {
         this.evaluations = new ArrayList<>();
     }
 
-    public void addMember(Student student) {
-        if (student != null && !members.contains(student)) {
-            members.add(student);
+    public void addMember(Student student) throws InvalidFYPGroupException {
+        if (student == null) {
+            throw new InvalidFYPGroupException("FYP member cannot be null");
         }
+        if (members.contains(student)) {
+            throw new InvalidFYPGroupException("Student is already an FYP group member");
+        }
+        members.add(student);
     }
 
     public void removeMember(Student student) {
@@ -33,7 +37,10 @@ public class FYPGroup {
         return new ArrayList<>(members);
     }
 
-    public void assignSupervisor(PermanentInstructor supervisor) {
+    public void assignSupervisor(PermanentInstructor supervisor) throws InvalidFYPGroupException {
+        if (supervisor == null) {
+            throw new InvalidFYPGroupException("FYP supervisor cannot be null");
+        }
         if (this.supervisor != null && this.supervisor != supervisor) {
             this.supervisor.removeFYPGroup(this);
         }
@@ -43,16 +50,29 @@ public class FYPGroup {
         }
     }
 
-    public void addMeeting(FYPMeeting meeting) {
-        if (meeting != null) {
-            meetings.add(meeting);
+    public void addMeeting(FYPMeeting meeting) throws InvalidFYPGroupException {
+        if (meeting == null) {
+            throw new InvalidFYPGroupException("FYP meeting cannot be null");
         }
+        for (FYPMeeting existing : meetings) {
+            if (existing.getMeetingId().equalsIgnoreCase(meeting.getMeetingId())) {
+                throw new InvalidFYPGroupException("Duplicate FYP meeting ID: " + meeting.getMeetingId());
+            }
+        }
+        meetings.add(meeting);
     }
 
-    public void addEvaluation(FYPEvaluation evaluation) {
-        if (evaluation != null) {
-            evaluations.add(evaluation);
+    public void addEvaluation(FYPEvaluation evaluation) throws InvalidFYPEvaluationException {
+        if (evaluation == null) {
+            throw new InvalidFYPEvaluationException("FYP evaluation cannot be null");
         }
+        for (FYPEvaluation existing : evaluations) {
+            if (existing.getEvaluationId().equalsIgnoreCase(evaluation.getEvaluationId())) {
+                throw new InvalidFYPEvaluationException(
+                        "Duplicate FYP evaluation ID: " + evaluation.getEvaluationId());
+            }
+        }
+        evaluations.add(evaluation);
     }
 
     public String getDetails() {
@@ -79,6 +99,10 @@ public class FYPGroup {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public PermanentInstructor getSupervisor() {

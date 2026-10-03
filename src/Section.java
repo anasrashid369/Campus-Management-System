@@ -2,6 +2,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Represents a section of a course offered in a semester.
+ */
 public class Section {
     private String sectionId;
     private int capacity;
@@ -10,15 +13,25 @@ public class Section {
     private TeachingAssistant teachingAssistant;
     private Schedule schedule;
     private List<Enrollment> enrollments;
-    private List<Attendance> attendanceRecords; // Section 1 --- 0..* Attendance
+    private List<Attendance> attendanceRecords;
 
-    Section(String sectionId, int capacity, Course course) {
+    public Section(String sectionId, int capacity, Course course) {
+        if (sectionId == null || sectionId.isBlank()) {
+            throw new IllegalArgumentException("Section ID cannot be null or blank");
+        }
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Capacity must be positive");
+        }
+        if (course == null) {
+            throw new IllegalArgumentException("Course cannot be null");
+        }
         this.sectionId = sectionId;
         this.capacity = capacity;
         this.course = course;
         this.enrollments = new ArrayList<>();
         this.attendanceRecords = new ArrayList<>();
     }
+
 
     public void enroll(Student student) throws CourseFullException {
         if (student == null) {

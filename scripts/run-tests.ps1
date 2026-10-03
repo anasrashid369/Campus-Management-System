@@ -13,7 +13,9 @@ java -cp $build ExtendedWorkflowTest
 java -cp $build CourseUnitTest
 java -cp $build SectionUnitTest
 java -cp $build StudentUnitTest
+java -cp $build RequestUnitTest
 Remove-Item -Path (Join-Path $root "data\catalog.txt") -Force -ErrorAction SilentlyContinue
+
 
 
 

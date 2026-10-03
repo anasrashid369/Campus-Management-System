@@ -76,7 +76,8 @@ public final class CampusCli {
                     "View Timetable",
                     "View Assignments",
                     "Submit Assignment",
-                    "View Attendance")));
+                    "View Attendance",
+                    "Submit Generic Academic Request")));
 
     private final BufferedReader input;
     private final PrintStream output;
@@ -221,6 +222,7 @@ public final class CampusCli {
             case 12 -> viewStudentAssignments(student);
             case 13 -> submitAssignment(student);
             case 14 -> viewStudentAttendance(student);
+            case 15 -> submitGenericAcademicRequest(student);
             default -> output.println("This workflow is not connected yet.");
         }
     }
@@ -447,7 +449,15 @@ public final class CampusCli {
         if (assignment == null) {
             return;
         }
-        for (Submission submission : assistant.viewSubmissions(assignment)) {
+        List<Submission> submissions;
+        try {
+            submissions = assistant.viewSubmissions(assignment);
+        } catch (UnauthorizedActionException exception) {
+            ApplicationLogger.error("submission.view_denied ta=" + assistant.getStudentId(), exception);
+            output.println(exception.getMessage());
+            return;
+        }
+        for (Submission submission : submissions) {
             output.printf("%s | %s | %s | marks %.2f%n", submission.getStudent().getStudentId(),
                     submission.getStatus(), submission.getSubmissionDate(), submission.getMarks());
             if (submission.getFeedback() != null) {
@@ -462,7 +472,15 @@ public final class CampusCli {
             return;
         }
         boolean found = false;
-        for (Submission submission : assistant.viewSubmissions(assignment)) {
+        List<Submission> submissions;
+        try {
+            submissions = assistant.viewSubmissions(assignment);
+        } catch (UnauthorizedActionException exception) {
+            ApplicationLogger.error("submission.late_view_denied ta=" + assistant.getStudentId(), exception);
+            output.println(exception.getMessage());
+            return;
+        }
+        for (Submission submission : submissions) {
             if (submission.isLate()) {
                 found = true;
                 output.printf("%s | %s%n", submission.getStudent().getStudentId(),
@@ -494,7 +512,13 @@ public final class CampusCli {
         if (!assignMarks(assistant, submission, marks)) {
             return;
         }
-        assistant.giveFeedback(submission, comments);
+        try {
+            assistant.giveFeedback(submission, comments);
+        } catch (UnauthorizedActionException exception) {
+            ApplicationLogger.error("submission.feedback_denied id=" + submission.getSubmissionId(), exception);
+            output.println(exception.getMessage());
+            return;
+        }
         if (saveCatalog("submission.evaluate")) {
             ApplicationLogger.info("submission.evaluated id=" + submission.getSubmissionId()
                     + " ta=" + assistant.getStudentId());
@@ -527,6 +551,10 @@ public final class CampusCli {
             ApplicationLogger.error("submission.marks_rejected id=" + submission.getSubmissionId(), exception);
             output.println("Marks were not assigned: " + exception.getMessage());
             return false;
+        } catch (UnauthorizedActionException exception) {
+            ApplicationLogger.error("submission.marks_denied id=" + submission.getSubmissionId(), exception);
+            output.println(exception.getMessage());
+            return false;
         }
     }
 
@@ -543,7 +571,13 @@ public final class CampusCli {
         if (comments == null) {
             return;
         }
-        assistant.giveFeedback(submission, comments);
+        try {
+            assistant.giveFeedback(submission, comments);
+        } catch (UnauthorizedActionException exception) {
+            ApplicationLogger.error("submission.feedback_denied id=" + submission.getSubmissionId(), exception);
+            output.println(exception.getMessage());
+            return;
+        }
         if (saveCatalog("submission.feedback")) {
             ApplicationLogger.info("submission.feedback_added id=" + submission.getSubmissionId());
             output.println("Feedback added.");
@@ -1441,6 +1475,44 @@ public final class CampusCli {
         }
     }
 
+    private void submitGenericAcademicRequest(Student student) throws IOException {
+        output.println("1. Professor concern");
+        output.println("2. Classmate concern");
+        output.println("3. Other academic concern");
+        Integer categoryChoice = readChoice("Select request category (0 to cancel): ", 0, 3);
+        if (categoryChoice == null || categoryChoice == 0) {
+            return;
+        }
+        RequestCategory category = switch (categoryChoice) {
+            case 1 -> RequestCategory.PROFESSOR;
+            case 2 -> RequestCategory.CLASSMATE;
+            default -> RequestCategory.OTHER;
+        };
+        String description = readRequiredText("Request description: ");
+        if (description == null) {
+            return;
+        }
+        Integer priority = readPositiveInteger("Priority: ", "Enter a positive whole-number priority.");
+        if (priority == null) {
+            return;
+        }
+        GenericRequest request = new GenericRequest("REQ-" + UUID.randomUUID(),
+                java.time.LocalDate.now(), description, priority, student, category);
+        request.submit();
+        try {
+            academicOfficeAdmin.addRequest(request);
+        } catch (InvalidRequestException exception) {
+            ApplicationLogger.error("request.generic_submit_failed student=" + student.getStudentId(), exception);
+            output.println("Request was not submitted: " + exception.getMessage());
+            return;
+        }
+        if (saveCatalog("request.generic_submit")) {
+            ApplicationLogger.info("request.generic_submitted id=" + request.getRequestId()
+                    + " category=" + category);
+            output.printf("Academic request %s submitted.%n", request.getRequestId());
+        }
+    }
+
     private void createCourse() throws IOException {
         String courseCode = readRequiredText("Course code: ");
         if (courseCode == null) {
@@ -1468,6 +1540,7 @@ public final class CampusCli {
             Course course = new Course(courseCode, title, creditHours);
             academicOfficeAdmin.createCourse(course);
             if (academicOfficeAdmin.searchCourse(courseCode) == course) {
+                attachPrerequisitesFromPrompt(course);
                 if (saveCatalog("course.create")) {
                     ApplicationLogger.info("course.created code=" + courseCode);
                     output.printf("Course %s created successfully.%n", courseCode);
@@ -1526,6 +1599,7 @@ public final class CampusCli {
         if (academicOfficeAdmin.searchCourse(courseCode) == existingCourse
                 && existingCourse.getTitle().equals(title)
                 && existingCourse.getCreditHours() == creditHours) {
+            attachPrerequisitesFromPrompt(existingCourse);
             if (saveCatalog("course.update")) {
                 ApplicationLogger.info("course.updated code=" + existingCourse.getCourseCode());
                 output.printf("Course %s updated successfully.%n", existingCourse.getCourseCode());
@@ -1534,6 +1608,42 @@ public final class CampusCli {
             ApplicationLogger.info("course.update_failed code=" + courseCode);
             output.printf("Course %s was not updated.%n", courseCode);
         }
+    }
+
+    private void attachPrerequisitesFromPrompt(Course course) throws IOException {
+        String raw = readOptionalText(
+                "Prerequisite course codes (comma-separated, or blank to skip): ");
+        if (raw == null || raw.isEmpty()) {
+            return;
+        }
+        for (String token : raw.split(",")) {
+            String prerequisiteCode = token.trim();
+            if (prerequisiteCode.isEmpty()) {
+                continue;
+            }
+            Course prerequisite = academicOfficeAdmin.searchCourse(prerequisiteCode);
+            if (prerequisite == null) {
+                output.printf("Prerequisite %s was not found; it was not linked.%n", prerequisiteCode);
+                continue;
+            }
+            if (prerequisite.getCourseCode().equalsIgnoreCase(course.getCourseCode())) {
+                output.println("A course cannot be its own prerequisite.");
+                continue;
+            }
+            course.addPrerequisite(prerequisite);
+            output.printf("Linked prerequisite %s to course %s.%n",
+                    prerequisite.getCourseCode(), course.getCourseCode());
+        }
+    }
+
+    private String readOptionalText(String prompt) throws IOException {
+        output.print(prompt);
+        output.flush();
+        String line = input.readLine();
+        if (line == null) {
+            return null;
+        }
+        return line.trim();
     }
 
     private String readRequiredText(String prompt) throws IOException {

@@ -187,7 +187,7 @@ public final class AnasCoreSmokeTest {
             "escaped room name should round-trip");
         check(restoredStudents.size() == 2
                 && restoredStudents.get(0) instanceof NormalStudent
-                && restoredSections.get(1).getEnrolledStudents().contains(restoredStudents.get(0)),
+                && restoredSections.get(0).getEnrolledStudents().contains(restoredStudents.get(0)),
             "student enrollment relationship should restore");
         check(restoredStudents.get(0).calculateTotalCreditHours() == 7,
             "registered credit-hour total should restore");
@@ -262,7 +262,7 @@ public final class AnasCoreSmokeTest {
         private static void testCliRestartWorkflow() {
         ByteArrayOutputStream firstOutput = new ByteArrayOutputStream();
         CampusCli firstRun = new CampusCli(new BufferedReader(new StringReader(
-            "1\n1\nCLI101\nCLI Course\n3\n4\nCLI-A\nCLI101\n20\n0\n0\n")),
+            "1\n1\nCLI101\nCLI Course\n3\n\n4\nCLI-A\nCLI101\n20\n0\n0\n")),
             new PrintStream(firstOutput));
         firstRun.run();
         check(firstOutput.toString().contains("Section CLI-A created for course CLI101."),
@@ -281,7 +281,7 @@ public final class AnasCoreSmokeTest {
         }
 
         private static void testStudentRequestAdminApprovalWorkflow() {
-        String adminSetup = runCli("1\n1\nCR101\nClash Course\n3\n4\nS-A\nCR101\n30\n"
+        String adminSetup = runCli("1\n1\nCR101\nClash Course\n3\n\n4\nS-A\nCR101\n30\n"
             + "7\nS-A\nMonday\n09:00\n10:00\nR101\n4\nS-B\nCR101\n30\n"
             + "7\nS-B\nMonday\n09:30\n10:30\nR102\n0\n0\n");
         check(adminSetup.contains("Section S-B created for course CR101."),
@@ -310,7 +310,7 @@ public final class AnasCoreSmokeTest {
         }
 
         private static void testTeachingAssistantAssignmentWorkflow() throws Exception {
-        String setup = runCli("1\n1\nCS301\nSystems\n3\n4\nSEC1\nCS301\n20\n"
+        String setup = runCli("1\n1\nCS301\nSystems\n3\n\n4\nSEC1\nCS301\n20\n"
             + "8\nSEC1\nT1\n1\nTeacher One\nteacher@example.test\n555-0100\n"
             + "4\nSEC2\nCS301\n20\n8\nSEC2\nV1\n2\nTeacher Visitor\n"
             + "visitor@example.test\n555-0102\n0\n0\n");

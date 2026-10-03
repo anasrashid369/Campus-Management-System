@@ -3,6 +3,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Represents an academic course within the Campus Management System.
+ */
 public class Course {
     private String courseCode;
     private String title;
@@ -10,7 +13,16 @@ public class Course {
     private Set<Course> prerequisites;
     private List<Section> sections;
 
-    Course(String courseCode, String title, int creditHours) {
+    public Course(String courseCode, String title, int creditHours) {
+        if (courseCode == null || courseCode.isBlank()) {
+            throw new IllegalArgumentException("Course code cannot be null or blank");
+        }
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Course title cannot be null or blank");
+        }
+        if (creditHours <= 0) {
+            throw new IllegalArgumentException("Credit hours must be positive");
+        }
         this.courseCode = courseCode;
         this.title = title;
         this.creditHours = creditHours;
@@ -31,12 +43,18 @@ public class Course {
     }
 
     void updateDetails(String title, int creditHours) {
-        this.title = title;
-        this.creditHours = creditHours;
+        if (title != null && !title.isBlank()) {
+            this.title = title;
+        }
+        if (creditHours > 0) {
+            this.creditHours = creditHours;
+        }
     }
 
     public void addPrerequisite(Course course) {
-        prerequisites.add(course);
+        if (course != null && course != this) {
+            prerequisites.add(course);
+        }
     }
 
     public Set<Course> getPrerequisites() {
@@ -44,10 +62,12 @@ public class Course {
     }
 
     public void addSection(Section section) {
-        sections.add(section);
+        if (section != null && !sections.contains(section)) {
+            sections.add(section);
+        }
     }
 
     public List<Section> getSections() {
-        return sections;
+        return new ArrayList<>(sections);
     }
-}
+}

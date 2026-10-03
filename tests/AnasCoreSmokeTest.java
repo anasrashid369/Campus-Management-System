@@ -389,15 +389,18 @@ public final class AnasCoreSmokeTest {
             private static void testFypCliWorkflow() throws Exception {
             String fypActions = runCli("2\nT1\n17\nFYP-G1\nCampus App\nStudent project\ny\n1\nn\n"
                 + "14\n1\nMEET-1\n2027-01-02\nProgress review\n"
-                + "15\n1\nEVAL-1\n2027-01-03\n91\n"
+                + "15\n1\nEVAL-1\n2027-01-03\n91\nPromising idea\n"
                 + "16\n1\n1\nStrong work\n"
+                + "18\n1\n1\nAgreed on project scope\n"
                 + "11\n12\n1\n13\n1\n0\n0\n");
             check(fypActions.contains("FYP group FYP-G1 created and supervised by T1."),
                 "Permanent Instructor should create and supervise an FYP group");
             check(fypActions.contains("Meeting MEET-1 scheduled for group FYP-G1."),
                 "Permanent Instructor should schedule FYP meetings");
-            check(fypActions.contains("FYP idea evaluated with score 91.00."),
-                "Permanent Instructor should evaluate an FYP idea");
+            check(fypActions.contains("FYP idea evaluated with score 91.00 and feedback."),
+                "Evaluate FYP Idea should include feedback");
+            check(fypActions.contains("Notes updated for meeting MEET-1."),
+                "Permanent Instructor should update FYP meeting notes");
             check(fypActions.contains("FYP feedback saved."),
                 "Permanent Instructor should save evaluation feedback");
 
@@ -420,8 +423,9 @@ public final class AnasCoreSmokeTest {
                     && restoredGroup.getMembers().get(0).getStudentId().equals("ST1"),
                 "FYP group member should restore");
             check(restoredGroup.getMeetings().size() == 1
-                    && restoredGroup.getMeetings().get(0).getAgenda().equals("Progress review"),
-                "FYP meeting should restore");
+                    && restoredGroup.getMeetings().get(0).getAgenda().equals("Progress review")
+                    && restoredGroup.getMeetings().get(0).getNotes().equals("Agreed on project scope"),
+                "FYP meeting and its notes should restore");
             check(restoredGroup.getEvaluations().size() == 1
                     && restoredGroup.getEvaluations().get(0).getScore() == 91
                     && restoredGroup.getEvaluations().get(0).getFeedback().equals("Strong work"),

@@ -97,14 +97,20 @@ final class FypCliWorkflow {
         if (score == null) {
             return;
         }
+        // Evaluate FYP Idea <<include>> Provide FYP Feedback, so feedback is collected in the same step.
+        String feedback = context.readRequiredText("Feedback: ");
+        if (feedback == null) {
+            return;
+        }
         FYPEvaluation evaluation = new FYPEvaluation(evaluationId, date, instructor);
         try {
             evaluation.evaluate(score);
+            instructor.provideFYPFeedback(evaluation, feedback);
             instructor.evaluateFYPIdea(group, evaluation);
             if (context.saveCatalog("fyp.idea.evaluate")) {
                 ApplicationLogger.info("fyp.idea_evaluated group=" + group.getGroupId()
                         + " evaluation=" + evaluationId);
-                context.out().printf("FYP idea evaluated with score %.2f.%n", score);
+                context.out().printf("FYP idea evaluated with score %.2f and feedback.%n", score);
             }
         } catch (InvalidFYPGroupException | InvalidFYPEvaluationException exception) {
             ApplicationLogger.error("fyp.evaluation_rejected id=" + evaluationId, exception);
@@ -139,6 +145,32 @@ final class FypCliWorkflow {
             ApplicationLogger.info("fyp.feedback_added group=" + group.getGroupId()
                     + " evaluation=" + evaluation.getEvaluationId());
             context.out().println("FYP feedback saved.");
+        }
+    }
+
+    /** Records what was discussed in one of the group's scheduled meetings (FYPMeeting.updateNotes). */
+    void updateMeetingNotes(PermanentInstructor instructor) throws IOException {
+        FYPGroup group = selectGroup(instructor);
+        if (group == null) {
+            return;
+        }
+        List<FYPMeeting> meetings = group.getMeetings();
+        meetings.sort(new FYPMeetingDateComparator());
+        FYPMeeting meeting = context.choose(meetings, "The group has no scheduled meetings.",
+                "Select a meeting" + CliContext.CANCEL_SUFFIX,
+                item -> item.getMeetingId() + " | " + item.getMeetingDate() + " | " + item.getAgenda());
+        if (meeting == null) {
+            return;
+        }
+        String notes = context.readRequiredText("Meeting notes: ");
+        if (notes == null) {
+            return;
+        }
+        meeting.updateNotes(notes);
+        if (context.saveCatalog("fyp.meeting.notes")) {
+            ApplicationLogger.info("fyp.meeting_notes_updated group=" + group.getGroupId()
+                    + " meeting=" + meeting.getMeetingId());
+            context.out().printf("Notes updated for meeting %s.%n", meeting.getMeetingId());
         }
     }
 

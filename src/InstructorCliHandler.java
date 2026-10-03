@@ -27,7 +27,8 @@ final class InstructorCliHandler implements RoleCliHandler {
         SCHEDULE_FYP_MEETING("Schedule FYP Meeting", true),
         EVALUATE_FYP_IDEA("Evaluate FYP Idea", true),
         PROVIDE_FYP_FEEDBACK("Provide FYP Feedback", true),
-        CREATE_FYP_GROUP("Create FYP Group", true);
+        CREATE_FYP_GROUP("Create FYP Group", true),
+        UPDATE_FYP_MEETING_NOTES("Update FYP Meeting Notes", true);
 
         private final String label;
         private final boolean permanentOnly;
@@ -148,6 +149,7 @@ final class InstructorCliHandler implements RoleCliHandler {
             case EVALUATE_FYP_IDEA -> fypWorkflow.evaluateIdea(permanent);
             case PROVIDE_FYP_FEEDBACK -> fypWorkflow.provideFeedback(permanent);
             case CREATE_FYP_GROUP -> fypWorkflow.createGroup(permanent);
+            case UPDATE_FYP_MEETING_NOTES -> fypWorkflow.updateMeetingNotes(permanent);
             default -> throw new IllegalStateException("Unhandled permanent instructor option " + selected);
         }
     }

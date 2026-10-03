@@ -10,5 +10,7 @@ $tests = @(Get-ChildItem (Join-Path $root "tests\*.java")).FullName
 javac -d $build -encoding UTF-8 @sources @tests
 java -cp $build AnasCoreSmokeTest
 java -cp $build ExtendedWorkflowTest
+java -cp $build CourseUnitTest
 Remove-Item -Path (Join-Path $root "data\catalog.txt") -Force -ErrorAction SilentlyContinue
+
 

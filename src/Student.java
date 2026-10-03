@@ -2,19 +2,27 @@ import java.util.List;
 import java.util.ArrayList;
 
 
-public abstract class Student extends Person{
+/**
+ * Abstract representation of a Student in the Campus Management System.
+ */
+public abstract class Student extends Person {
     private String studentId;
     private int totalCreditHours;
     private List<Enrollment> enrollments;
 
-
-    // Constructor
-    Student(String name,String email,String phone,String studentId,int totalCreditHours){
-        super(name,email,phone);
+    Student(String name, String email, String phone, String studentId, int totalCreditHours) {
+        super(name, email, phone);
+        if (studentId == null || studentId.isBlank()) {
+            throw new IllegalArgumentException("Student ID cannot be null or blank");
+        }
+        if (totalCreditHours < 0) {
+            throw new IllegalArgumentException("Total credit hours cannot be negative");
+        }
         this.studentId = studentId;
         this.totalCreditHours = totalCreditHours;
         this.enrollments = new ArrayList<>();
     }
+
 
     //Methods
     public void setStudentId(String studentId){

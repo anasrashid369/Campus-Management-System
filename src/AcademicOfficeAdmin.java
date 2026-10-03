@@ -105,10 +105,34 @@ public class AcademicOfficeAdmin extends Administrator {
 
     public void approveRequest(Request request) throws InvalidRequestException {
         process(request, RequestStatus.APPROVED);
+        if (request instanceof CourseClashRequest clashRequest) {
+            applyApprovedCourseClash(clashRequest);
+        }
     }
 
     public void rejectRequest(Request request) throws InvalidRequestException {
         process(request, RequestStatus.REJECTED);
+    }
+
+    private void applyApprovedCourseClash(CourseClashRequest request) throws InvalidRequestException {
+        Student student = request.getStudent();
+        Section conflicting = request.getConflictingSection();
+        Section requested = request.getRequestedSection();
+        if (student == null || conflicting == null || requested == null) {
+            throw new InvalidRequestException("Course clash request is missing section or student details");
+        }
+        try {
+            if (conflicting.getEnrolledStudents().contains(student)) {
+                student.drop(conflicting);
+            }
+            student.register(requested);
+        } catch (CourseFullException | CourseClashException exception) {
+            throw new InvalidRequestException(
+                    "Approved clash request could not be applied: " + exception.getMessage());
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidRequestException(
+                    "Approved clash request could not be applied: " + exception.getMessage());
+        }
     }
 
     private void process(Request request, RequestStatus newStatus) throws InvalidRequestException {

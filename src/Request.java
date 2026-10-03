@@ -1,5 +1,8 @@
 import java.time.LocalDate;
 
+/**
+ * Abstract base class for academic requests submitted by students.
+ */
 public abstract class Request {
     private String requestId;
     private LocalDate requestDate;
@@ -10,13 +13,26 @@ public abstract class Request {
     private AcademicOfficeAdmin processedBy;
 
     Request(String requestId, LocalDate requestDate, String description, int priority, Student student) {
+        if (requestId == null || requestId.isBlank()) {
+            throw new IllegalArgumentException("Request ID cannot be null or blank");
+        }
+        if (requestDate == null) {
+            throw new IllegalArgumentException("Request date cannot be null");
+        }
+        if (student == null) {
+            throw new IllegalArgumentException("Student cannot be null");
+        }
+        if (priority <= 0) {
+            throw new IllegalArgumentException("Priority must be positive");
+        }
         this.requestId = requestId;
         this.requestDate = requestDate;
-        this.description = description;
+        this.description = description == null ? "" : description;
         this.priority = priority;
         this.student = student;
         this.status = RequestStatus.PENDING;
     }
+
 
     public void submit() {
         this.status = RequestStatus.PENDING;

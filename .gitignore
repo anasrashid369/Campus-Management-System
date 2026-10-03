@@ -28,3 +28,12 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Campus Management System runtime ###
+/data/*.txt
+/logs/
+/build-test/
+*.class
+catalog-test.txt
+malformed-catalog-test.txt
+malformed-schedule-test.txt

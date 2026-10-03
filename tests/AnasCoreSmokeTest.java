@@ -9,7 +9,11 @@ import java.time.LocalTime;
 import java.util.List;
 
 public final class AnasCoreSmokeTest {
+    /** CLI runs persist here so tests never touch the real data/catalog.txt. */
+    private static final Path CLI_CATALOG = Path.of(System.getProperty("java.io.tmpdir"), "cms-smoke-cli-catalog.txt");
+
     public static void main(String[] args) throws Exception {
+        Files.deleteIfExists(CLI_CATALOG);
         testCourseCreateSearchAndUpdate();
         testComparators();
         testSectionAndScheduleRules();
@@ -19,6 +23,7 @@ public final class AnasCoreSmokeTest {
         testTeachingAssistantAssignmentWorkflow();
         testFypCliWorkflow();
         testApplicationLogging();
+        Files.deleteIfExists(CLI_CATALOG);
         System.out.println("AnasCoreSmokeTest: PASS");
     }
 
@@ -263,7 +268,7 @@ public final class AnasCoreSmokeTest {
         ByteArrayOutputStream firstOutput = new ByteArrayOutputStream();
         CampusCli firstRun = new CampusCli(new BufferedReader(new StringReader(
             "1\n1\nCLI101\nCLI Course\n3\n\n4\nCLI-A\nCLI101\n20\n0\n0\n")),
-            new PrintStream(firstOutput));
+            new PrintStream(firstOutput), new CampusPersistence(CLI_CATALOG));
         firstRun.run();
         check(firstOutput.toString().contains("Section CLI-A created for course CLI101."),
             "first CLI run should create a course and section");
@@ -271,7 +276,7 @@ public final class AnasCoreSmokeTest {
         ByteArrayOutputStream secondOutput = new ByteArrayOutputStream();
         CampusCli secondRun = new CampusCli(new BufferedReader(new StringReader(
             "1\n3\ncli101\n6\nCLI-A\n25\n0\n0\n")),
-            new PrintStream(secondOutput));
+            new PrintStream(secondOutput), new CampusPersistence(CLI_CATALOG));
         secondRun.run();
         String result = secondOutput.toString();
         check(result.contains("Course found: CLI101 | CLI Course | 3 credit hour(s)"),
@@ -304,7 +309,7 @@ public final class AnasCoreSmokeTest {
         private static String runCli(String input) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         CampusCli cli = new CampusCli(new BufferedReader(new StringReader(input)),
-            new PrintStream(output));
+            new PrintStream(output), new CampusPersistence(CLI_CATALOG));
         cli.run();
         return output.toString();
         }
@@ -358,7 +363,7 @@ public final class AnasCoreSmokeTest {
         AcademicOfficeAdmin restoredAdmin = new AcademicOfficeAdmin("Reload", "", "", "RELOAD");
         List<Student> restoredStudents = new java.util.ArrayList<>();
         List<Instructor> restoredInstructors = new java.util.ArrayList<>();
-        new CampusPersistence(Path.of("data", "catalog.txt")).loadCatalog(
+        new CampusPersistence(CLI_CATALOG).loadCatalog(
             restoredAdmin, restoredStudents, restoredInstructors);
         TeachingAssistant restoredAssistant = null;
         for (Student restoredStudent : restoredStudents) {
@@ -399,7 +404,7 @@ public final class AnasCoreSmokeTest {
             AcademicOfficeAdmin restoredAdmin = new AcademicOfficeAdmin("FYP Reload", "", "", "RELOAD-FYP");
             List<Student> restoredStudents = new java.util.ArrayList<>();
             List<Instructor> restoredInstructors = new java.util.ArrayList<>();
-            new CampusPersistence(Path.of("data", "catalog.txt")).loadCatalog(
+            new CampusPersistence(CLI_CATALOG).loadCatalog(
                 restoredAdmin, restoredStudents, restoredInstructors);
             PermanentInstructor permanent = null;
             for (Instructor instructor : restoredInstructors) {

@@ -7,11 +7,16 @@ import java.nio.file.Path;
 import java.util.List;
 
 public final class ExtendedWorkflowTest {
+    /** CLI runs persist here so tests never touch the real data/catalog.txt. */
+    private static final Path CLI_CATALOG = Path.of(System.getProperty("java.io.tmpdir"), "cms-extended-cli-catalog.txt");
+
     public static void main(String[] args) throws Exception {
+        Files.deleteIfExists(CLI_CATALOG);
         testGenericRequestSubmissionAndRejection();
         testTeachingAssistantUnauthorizedAccess();
         testCourseClashApprovalEnrollmentChange();
         testPrerequisiteRegistrationBlock();
+        Files.deleteIfExists(CLI_CATALOG);
         System.out.println("ExtendedWorkflowTest: PASS");
     }
 
@@ -95,7 +100,8 @@ public final class ExtendedWorkflowTest {
 
     private static String runCli(String input) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        CampusCli cli = new CampusCli(new BufferedReader(new StringReader(input)), new PrintStream(output));
+        CampusCli cli = new CampusCli(new BufferedReader(new StringReader(input)), new PrintStream(output),
+                new CampusPersistence(CLI_CATALOG));
         cli.run();
         return output.toString();
     }

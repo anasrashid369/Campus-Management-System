@@ -83,7 +83,7 @@ public final class CampusCli {
     private final PrintStream output;
     private final AcademicOfficeAdmin academicOfficeAdmin = new AcademicOfficeAdmin(
             "Console Admin", "console-admin@localhost", "", "CLI-ADMIN");
-    private final CampusPersistence persistence = new CampusPersistence();
+    private final CampusPersistence persistence;
     private final List<Section> managedSections = new ArrayList<>();
     private final List<Instructor> managedInstructors = new ArrayList<>();
     private final List<Student> managedStudents = new ArrayList<>();
@@ -93,8 +93,13 @@ public final class CampusCli {
     }
 
     CampusCli(BufferedReader input, PrintStream output) {
+        this(input, output, new CampusPersistence());
+    }
+
+    CampusCli(BufferedReader input, PrintStream output, CampusPersistence persistence) {
         this.input = input;
         this.output = output;
+        this.persistence = persistence;
     }
 
     public void run() {

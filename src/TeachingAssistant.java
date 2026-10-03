@@ -27,7 +27,8 @@ public class TeachingAssistant extends Student implements Evaluator {
         return assignment;
     }
 
-    public List<Submission> viewSubmissions(Assignment assignment) {
+    public List<Submission> viewSubmissions(Assignment assignment) throws UnauthorizedActionException {
+        requireOwnAssignment(assignment);
         return assignment.getSubmissions();
     }
 
@@ -41,13 +42,30 @@ public class TeachingAssistant extends Student implements Evaluator {
         }
     }
 
-    public void evaluateSubmission(Submission submission, double marks) {
+    public void evaluateSubmission(Submission submission, double marks) throws UnauthorizedActionException {
+        requireOwnSubmission(submission);
         submission.assignMarks(marks);
     }
 
-    public void giveFeedback(Submission submission, String comments) {
+    public void giveFeedback(Submission submission, String comments) throws UnauthorizedActionException {
+        requireOwnSubmission(submission);
         String id = "FB-" + System.currentTimeMillis();
         submission.addFeedback(new Feedback(id, this, comments, LocalDate.now()));
+    }
+
+    private void requireOwnAssignment(Assignment assignment) throws UnauthorizedActionException {
+        if (assignment == null || !createdAssignments.contains(assignment)) {
+            throw new UnauthorizedActionException(
+                    "Teaching Assistant is not authorized to access assignment " + (assignment == null
+                            ? "(null)" : assignment.getId()));
+        }
+    }
+
+    private void requireOwnSubmission(Submission submission) throws UnauthorizedActionException {
+        if (submission == null || submission.getAssignment() == null) {
+            throw new UnauthorizedActionException("Teaching Assistant is not authorized to access this submission");
+        }
+        requireOwnAssignment(submission.getAssignment());
     }
 
     // The diagram only gives evaluate() : void, so this reports what is waiting to be evaluated

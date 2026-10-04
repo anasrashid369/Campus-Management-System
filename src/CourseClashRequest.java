@@ -12,8 +12,11 @@ public class CourseClashRequest extends Request {
     }
 
     public String getConflictDetails() {
-        return "Conflicting: " + conflictingSection.getCourse().getCourseCode()
-                + " | Requested: " + requestedSection.getCourse().getCourseCode();
+        Course conflictCourse = conflictingSection.getPrimaryCourse();
+        Course requestedCourse = requestedSection.getPrimaryCourse();
+        String conflictCode = conflictCourse != null ? conflictCourse.getCourseCode() : "Unknown";
+        String requestedCode = requestedCourse != null ? requestedCourse.getCourseCode() : "Unknown";
+        return "Conflicting: " + conflictCode + " | Requested: " + requestedCode;
     }
 
     public Section getConflictingSection() {

@@ -21,9 +21,10 @@ public abstract class Instructor extends Person{
     public List<Course> viewCourses(){
         List<Course> courses = new ArrayList<>();
         for (Section s : assignedSections) {
-            Course c = s.getCourse();
-            if (!courses.contains(c)) {
-                courses.add(c);
+            for (Course c : s.getCourses()) {
+                if (!courses.contains(c)) {
+                    courses.add(c);
+                }
             }
         }
         return courses;

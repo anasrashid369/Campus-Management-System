@@ -32,6 +32,6 @@ public class Enrollment {
     }
 
     public Course getCourse() {
-        return section.getCourse();
+        return section.getPrimaryCourse();
     }
 }

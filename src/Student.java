@@ -48,10 +48,13 @@ public abstract class Student extends Person {
             throw new IllegalArgumentException("Student is already enrolled in section "
                     + section.getSectionId());
         }
-        for (Course prerequisite : section.getCourse().getPrerequisites()) {
-            if (!viewCourses().contains(prerequisite)) {
-                throw new IllegalArgumentException("Register for prerequisite "
-                        + prerequisite.getCourseCode() + " first");
+        Course primaryCourse = section.getPrimaryCourse();
+        if (primaryCourse != null) {
+            for (Course prerequisite : primaryCourse.getPrerequisites()) {
+                if (!viewCourses().contains(prerequisite)) {
+                    throw new IllegalArgumentException("Register for prerequisite "
+                            + prerequisite.getCourseCode() + " first");
+                }
             }
         }
         for (Enrollment e : enrollments) {
@@ -61,7 +64,9 @@ public abstract class Student extends Person {
             }
         }
         section.enroll(this);
-        totalCreditHours += section.getCourse().getCreditHours();
+        if (primaryCourse != null) {
+            totalCreditHours += primaryCourse.getCreditHours();
+        }
     }
 
 
@@ -69,8 +74,11 @@ public abstract class Student extends Person {
         if (section == null || !isEnrolledIn(section)) {
             return;
         }
+        Course primaryCourse = section.getPrimaryCourse();
         section.drop(this);
-        totalCreditHours -= section.getCourse().getCreditHours();
+        if (primaryCourse != null) {
+            totalCreditHours -= primaryCourse.getCreditHours();
+        }
     }
 
     public int calculateTotalCreditHours(){

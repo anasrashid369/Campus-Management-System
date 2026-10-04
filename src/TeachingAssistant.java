@@ -21,7 +21,9 @@ public class TeachingAssistant extends Student implements Evaluator {
     }
 
     public Assignment createAssignment(String title, String description, LocalDate deadline, double totalMarks) {
-        String id = assignedSection.getCourse().getCourseCode() + "-" + title;
+        Course primaryCourse = assignedSection.getPrimaryCourse();
+        String courseCode = primaryCourse != null ? primaryCourse.getCourseCode() : assignedSection.getSectionId();
+        String id = courseCode + "-" + title;
         Assignment assignment = new Assignment(id, title, description, deadline, totalMarks, assignedSection, this);
         createdAssignments.add(assignment);
         return assignment;

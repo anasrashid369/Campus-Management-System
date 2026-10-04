@@ -174,7 +174,12 @@ final class InstructorCliHandler implements RoleCliHandler {
             return;
         }
         for (Section section : sections) {
-            context.out().printf("%s | %s%n", section.getSectionId(), section.getCourse().getCourseCode());
+            List<String> courseCodes = new ArrayList<>();
+            for (Course c : section.getCourses()) {
+                courseCodes.add(c.getCourseCode());
+            }
+            String coursesStr = courseCodes.isEmpty() ? "No courses" : String.join(", ", courseCodes);
+            context.out().printf("%s | %s%n", section.getSectionId(), coursesStr);
         }
     }
 

@@ -107,8 +107,10 @@ final class TeachingAssistantCliHandler implements RoleCliHandler {
             context.out().println("No section is assigned to this Teaching Assistant.");
             return;
         }
+        Course primaryCourse = section.getPrimaryCourse();
+        String courseCode = primaryCourse != null ? primaryCourse.getCourseCode() : "Unknown";
         context.out().printf("%s | %s | %d student(s)%n", section.getSectionId(),
-                section.getCourse().getCourseCode(), section.getEnrolledStudents().size());
+                courseCode, section.getEnrolledStudents().size());
     }
 
     // ---- Assignments ----
@@ -136,7 +138,9 @@ final class TeachingAssistantCliHandler implements RoleCliHandler {
             return;
         }
         // Mirrors the ID TeachingAssistant.createAssignment generates, so duplicates are rejected up front.
-        String assignmentId = section.getCourse().getCourseCode() + "-" + title;
+        Course primaryCourse = section.getPrimaryCourse();
+        String courseCode = primaryCourse != null ? primaryCourse.getCourseCode() : section.getSectionId();
+        String assignmentId = courseCode + "-" + title;
         for (Assignment existing : assistant.getCreatedAssignments()) {
             if (existing.getId().equalsIgnoreCase(assignmentId)) {
                 context.out().printf("Assignment %s already exists.%n", assignmentId);

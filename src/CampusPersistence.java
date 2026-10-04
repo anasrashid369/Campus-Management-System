@@ -459,8 +459,13 @@ public final class CampusPersistence {
         List<Section> sections = new ArrayList<>();
         Map<String, Section> sectionsByIdLoaded = new HashMap<>();
         for (SectionRecord record : sectionRecords) {
-            Course course = coursesByCode.get(record.courseCode().toUpperCase(Locale.ROOT));
-            Section section = new Section(record.sectionId(), record.capacity(), course);
+            Section section = new Section(record.sectionId(), record.capacity());
+            if (!record.courseCode().isEmpty()) {
+                Course course = coursesByCode.get(record.courseCode().toUpperCase(Locale.ROOT));
+                if (course != null) {
+                    section.addCourse(course);
+                }
+            }
             admin.createSection(section);
             if (!record.day().isEmpty()) {
                 section.setSchedule(new Schedule(Day.valueOf(record.day()),
@@ -644,8 +649,10 @@ public final class CampusPersistence {
         }
         for (Section section : admin.viewSections()) {
             Schedule schedule = section.getSchedule();
+            Course primaryCourse = section.getPrimaryCourse();
+            String courseCode = primaryCourse != null ? primaryCourse.getCourseCode() : "";
             lines.add(String.join("\t", "SECTION", encode(section.getSectionId()),
-                    encode(section.getCourse().getCourseCode()), Integer.toString(section.getCapacity()),
+                    encode(courseCode), Integer.toString(section.getCapacity()),
                     schedule == null ? "" : encode(schedule.getDay().name()),
                     schedule == null ? "" : encode(schedule.getStartTime().toString()),
                     schedule == null ? "" : encode(schedule.getEndTime().toString()),

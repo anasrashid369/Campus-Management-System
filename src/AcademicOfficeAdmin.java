@@ -55,7 +55,55 @@ public class AcademicOfficeAdmin extends Administrator {
             return;
         }
         sections.add(section);
-        section.getCourse().addSection(section);
+    }
+
+    public void assignCourseToSection(Section section, Course course) throws IllegalArgumentException {
+        if (section == null || course == null) {
+            throw new IllegalArgumentException("Section and Course cannot be null");
+        }
+        if (!sections.contains(section)) {
+            throw new IllegalArgumentException("Section does not exist");
+        }
+        if (!courses.contains(course)) {
+            throw new IllegalArgumentException("Course does not exist");
+        }
+        if (section.getCourses().contains(course)) {
+            throw new IllegalArgumentException("Course is already assigned to this section");
+        }
+        section.addCourse(course);
+    }
+
+    public void updateCourseInSection(Section section, Course course, String newTitle, int newCreditHours) throws IllegalArgumentException {
+        if (section == null || course == null) {
+            throw new IllegalArgumentException("Section and Course cannot be null");
+        }
+        if (!section.getCourses().contains(course)) {
+            throw new IllegalArgumentException("Course is not assigned to this section");
+        }
+        course.updateDetails(newTitle, newCreditHours);
+    }
+
+    public void removeCourseFromSection(Section section, Course course) throws IllegalArgumentException {
+        if (section == null || course == null) {
+            throw new IllegalArgumentException("Section and Course cannot be null");
+        }
+        if (!section.getCourses().contains(course)) {
+            throw new IllegalArgumentException("Course is not assigned to this section");
+        }
+        section.removeCourse(course);
+    }
+
+    public void deleteSection(Section section) throws IllegalArgumentException {
+        if (section == null) {
+            throw new IllegalArgumentException("Section cannot be null");
+        }
+        if (!sections.contains(section)) {
+            throw new IllegalArgumentException("Section does not exist");
+        }
+        for (Course course : section.getCourses()) {
+            section.removeCourse(course);
+        }
+        sections.remove(section);
     }
 
     // Replaces the stored section that has the same section id
@@ -63,10 +111,8 @@ public class AcademicOfficeAdmin extends Administrator {
         for (int i = 0; i < sections.size(); i++) {
             if (sections.get(i).getSectionId().equals(section.getSectionId())) {
                 Section old = sections.set(i, section);
-                List<Section> courseSections = old.getCourse().getSections();
-                int index = courseSections.indexOf(old);
-                if (index >= 0) {
-                    courseSections.set(index, section);
+                for (Course course : old.getCourses()) {
+                    section.addCourse(course);
                 }
                 return;
             }

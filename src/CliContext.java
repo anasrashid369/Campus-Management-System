@@ -144,8 +144,12 @@ final class CliContext {
 
     Section selectSection(List<Section> candidates, String prompt) throws IOException {
         return choose(candidates, "No sections are available for this operation.", prompt,
-                section -> String.format("%s | %s | %d seat(s) available", section.getSectionId(),
-                        section.getCourse().getCourseCode(), section.getAvailableSeats()));
+                section -> {
+                    Course primaryCourse = section.getPrimaryCourse();
+                    String courseCode = primaryCourse != null ? primaryCourse.getCourseCode() : "No courses";
+                    return String.format("%s | %s | %d seat(s) available", section.getSectionId(),
+                            courseCode, section.getAvailableSeats());
+                });
     }
 
     Student selectSectionStudent(Section section) throws IOException {

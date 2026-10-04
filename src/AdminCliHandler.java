@@ -15,6 +15,10 @@ final class AdminCliHandler implements RoleCliHandler {
         SET_SECTION_CAPACITY("Set Section Capacity"),
         ASSIGN_ROOM("Assign Room"),
         ASSIGN_INSTRUCTOR("Assign Instructor"),
+        ASSIGN_COURSE_TO_SECTION("Assign Course to Section"),
+        UPDATE_COURSE_IN_SECTION("Update Course in Section"),
+        REMOVE_COURSE_FROM_SECTION("Remove Course from Section"),
+        DELETE_SECTION("Delete Section"),
         VIEW_REQUESTS("View Requests"),
         APPROVE_REQUEST("Approve Request"),
         REJECT_REQUEST("Reject Request");
@@ -62,6 +66,10 @@ final class AdminCliHandler implements RoleCliHandler {
             case SET_SECTION_CAPACITY -> withSection(this::updateSectionCapacity);
             case ASSIGN_ROOM -> withSection(this::assignRoom);
             case ASSIGN_INSTRUCTOR -> withSection(this::assignInstructor);
+            case ASSIGN_COURSE_TO_SECTION -> assignCourseToSection();
+            case UPDATE_COURSE_IN_SECTION -> updateCourseInSection();
+            case REMOVE_COURSE_FROM_SECTION -> removeCourseFromSection();
+            case DELETE_SECTION -> deleteSection();
             case VIEW_REQUESTS -> viewRequests();
             case APPROVE_REQUEST -> processRequest(RequestStatus.APPROVED);
             case REJECT_REQUEST -> processRequest(RequestStatus.REJECTED);
@@ -190,32 +198,22 @@ final class AdminCliHandler implements RoleCliHandler {
             context.out().printf("Section %s already exists.%n", sectionId);
             return;
         }
-        String courseCode = context.readRequiredText("Course code: ");
-        if (courseCode == null) {
-            return;
-        }
-        Course course = admin.searchCourse(courseCode);
-        if (course == null) {
-            ApplicationLogger.info("section.create_rejected unknown_course=" + courseCode);
-            context.out().printf("No course found with code %s.%n", courseCode);
-            return;
-        }
         Integer capacity = context.readPositiveInteger("Section capacity: ", CAPACITY_ERROR);
         if (capacity == null) {
             return;
         }
 
-        Section section = new Section(sectionId, capacity, course);
-        admin.createSection(section);
-        if (course.getSections().contains(section)) {
+        try {
+            Section section = new Section(sectionId, capacity);
+            admin.createSection(section);
             context.sections().add(section);
             if (context.saveCatalog("section.create")) {
-                ApplicationLogger.info("section.created id=" + sectionId + " course=" + course.getCourseCode());
-                context.out().printf("Section %s created for course %s.%n", sectionId, course.getCourseCode());
+                ApplicationLogger.info("section.created id=" + sectionId);
+                context.out().printf("Section %s created successfully. Courses can be assigned later.%n", sectionId);
             }
-        } else {
-            ApplicationLogger.info("section.create_failed id=" + sectionId);
-            context.out().printf("Section %s was not created.%n", sectionId);
+        } catch (IllegalArgumentException exception) {
+            ApplicationLogger.error("section.create_failed id=" + sectionId, exception);
+            context.out().printf("Section was not created: %s%n", exception.getMessage());
         }
     }
 
@@ -344,6 +342,142 @@ final class AdminCliHandler implements RoleCliHandler {
         return instructorType == 1
                 ? new PermanentInstructor(name, email, phone, teacherId)
                 : new VisitingInstructor(name, email, phone, teacherId);
+    }
+
+    private void assignCourseToSection() throws IOException {
+        Section section = findSection();
+        if (section == null) {
+            return;
+        }
+        String courseCode = context.readRequiredText("Course code: ");
+        if (courseCode == null) {
+            return;
+        }
+        Course course = admin.searchCourse(courseCode);
+        if (course == null) {
+            ApplicationLogger.info("course_assign_rejected unknown_course=" + courseCode);
+            context.out().printf("No course found with code %s.%n", courseCode);
+            return;
+        }
+
+        try {
+            admin.assignCourseToSection(section, course);
+            if (context.saveCatalog("course_assign")) {
+                ApplicationLogger.info("course_assigned section=" + section.getSectionId() + " course=" + courseCode);
+                context.out().printf("Course %s assigned to section %s.%n", courseCode, section.getSectionId());
+            }
+        } catch (IllegalArgumentException exception) {
+            ApplicationLogger.error("course_assign_failed section=" + section.getSectionId(), exception);
+            context.out().printf("Course was not assigned: %s%n", exception.getMessage());
+        }
+    }
+
+    private void updateCourseInSection() throws IOException {
+        Section section = findSection();
+        if (section == null) {
+            return;
+        }
+        if (section.getCourses().isEmpty()) {
+            context.out().println("This section has no courses assigned.");
+            return;
+        }
+        String courseCode = context.readRequiredText("Course code to update: ");
+        if (courseCode == null) {
+            return;
+        }
+        Course course = null;
+        for (Course c : section.getCourses()) {
+            if (c.getCourseCode().equalsIgnoreCase(courseCode)) {
+                course = c;
+                break;
+            }
+        }
+        if (course == null) {
+            context.out().printf("Course %s is not assigned to section %s.%n", courseCode, section.getSectionId());
+            return;
+        }
+        String title = context.readRequiredText("New course title: ");
+        if (title == null) {
+            return;
+        }
+        Integer creditHours = context.readPositiveInteger("New credit hours: ", CREDIT_HOURS_ERROR);
+        if (creditHours == null) {
+            return;
+        }
+
+        try {
+            admin.updateCourseInSection(section, course, title, creditHours);
+            if (context.saveCatalog("course_update")) {
+                ApplicationLogger.info("course_updated_in_section section=" + section.getSectionId()
+                        + " course=" + courseCode);
+                context.out().printf("Course %s updated in section %s.%n", courseCode, section.getSectionId());
+            }
+        } catch (IllegalArgumentException exception) {
+            ApplicationLogger.error("course_update_failed section=" + section.getSectionId(), exception);
+            context.out().printf("Course was not updated: %s%n", exception.getMessage());
+        }
+    }
+
+    private void removeCourseFromSection() throws IOException {
+        Section section = findSection();
+        if (section == null) {
+            return;
+        }
+        if (section.getCourses().isEmpty()) {
+            context.out().println("This section has no courses assigned.");
+            return;
+        }
+        String courseCode = context.readRequiredText("Course code to remove: ");
+        if (courseCode == null) {
+            return;
+        }
+        Course course = null;
+        for (Course c : section.getCourses()) {
+            if (c.getCourseCode().equalsIgnoreCase(courseCode)) {
+                course = c;
+                break;
+            }
+        }
+        if (course == null) {
+            context.out().printf("Course %s is not assigned to section %s.%n", courseCode, section.getSectionId());
+            return;
+        }
+
+        try {
+            admin.removeCourseFromSection(section, course);
+            if (context.saveCatalog("course_remove")) {
+                ApplicationLogger.info("course_removed section=" + section.getSectionId()
+                        + " course=" + courseCode);
+                context.out().printf("Course %s removed from section %s.%n", courseCode, section.getSectionId());
+            }
+        } catch (IllegalArgumentException exception) {
+            ApplicationLogger.error("course_remove_failed section=" + section.getSectionId(), exception);
+            context.out().printf("Course was not removed: %s%n", exception.getMessage());
+        }
+    }
+
+    private void deleteSection() throws IOException {
+        String sectionId = context.readRequiredText("Section ID to delete: ");
+        if (sectionId == null) {
+            return;
+        }
+        Section section = context.findSection(sectionId);
+        if (section == null) {
+            context.out().printf("No section found with ID %s.%n", sectionId);
+            return;
+        }
+
+        try {
+            admin.deleteSection(section);
+            context.sections().remove(section);
+            if (context.saveCatalog("section.delete")) {
+                ApplicationLogger.info("section.deleted id=" + sectionId);
+                context.out().printf("Section %s deleted successfully.%n", sectionId);
+            }
+        } catch (IllegalArgumentException exception) {
+            ApplicationLogger.error("section.delete_failed id=" + sectionId, exception);
+            context.out().printf("Section was not deleted: %s%n", exception.getMessage());
+        }
     }
 
     private void withSection(SectionAction action) throws IOException {

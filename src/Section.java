@@ -2,32 +2,26 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Represents a section of a course offered in a semester.
- */
 public class Section {
     private String sectionId;
     private int capacity;
-    private Course course;
+    private List<Course> courses;
     private Instructor instructor;
     private TeachingAssistant teachingAssistant;
     private Schedule schedule;
     private List<Enrollment> enrollments;
     private List<Attendance> attendanceRecords;
 
-    public Section(String sectionId, int capacity, Course course) {
+    public Section(String sectionId, int capacity) {
         if (sectionId == null || sectionId.isBlank()) {
             throw new IllegalArgumentException("Section ID cannot be null or blank");
         }
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive");
         }
-        if (course == null) {
-            throw new IllegalArgumentException("Course cannot be null");
-        }
         this.sectionId = sectionId;
         this.capacity = capacity;
-        this.course = course;
+        this.courses = new ArrayList<>();
         this.enrollments = new ArrayList<>();
         this.attendanceRecords = new ArrayList<>();
     }
@@ -107,9 +101,25 @@ public class Section {
         return schedule.hasClash(section.getSchedule());
     }
 
-    // Added: used by Instructor and Enrollment
-    public Course getCourse() {
-        return course;
+    public void addCourse(Course course) {
+        if (course != null && !courses.contains(course)) {
+            courses.add(course);
+            course.addSection(this);
+        }
+    }
+
+    public void removeCourse(Course course) {
+        if (course != null && courses.contains(course)) {
+            courses.remove(course);
+        }
+    }
+
+    public List<Course> getCourses() {
+        return new ArrayList<>(courses);
+    }
+
+    public Course getPrimaryCourse() {
+        return courses.isEmpty() ? null : courses.get(0);
     }
 
     // Added: fills the "schedule is always null" gap (used by AcademicOfficeAdmin.assignRoom)
